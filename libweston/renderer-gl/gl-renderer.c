@@ -2283,6 +2283,7 @@ gl_renderer_query_dmabuf_formats(struct weston_compositor *wc,
 	struct gl_renderer *gr = get_renderer(wc);
 	static const int fallback_formats[] = {
 		DRM_FORMAT_ARGB8888,
+		DRM_FORMAT_ABGR8888,
 		DRM_FORMAT_XRGB8888,
 		DRM_FORMAT_YUYV,
 		DRM_FORMAT_NV12,
