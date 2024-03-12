@@ -1298,12 +1298,13 @@ output_init(struct output *output, struct desktop *desktop)
 {
 	struct wl_surface *surface;
 
-	if (desktop->want_panel) {
+/*	if (desktop->want_panel) {
 		output->panel = panel_create(desktop, output);
 		surface = window_get_wl_surface(output->panel->window);
 		weston_desktop_shell_set_panel(desktop->shell,
 					       output->output, surface);
 	}
+	*/
 
 	output->background = background_create(desktop, output);
 	surface = window_get_wl_surface(output->background->window);
@@ -1455,12 +1456,13 @@ panel_add_launchers(struct panel *panel, struct desktop *desktop)
 	if (count == 0) {
                 char *name = file_name_with_datadir("terminal.png");
 
-		/* add default launcher */
+		/*add default launcher*/ 
 		panel_add_launcher(panel,
 				   name,
-				   BINDIR "/weston-terminal");
+				   BINDIR "/fde_ctrl");
 		free(name);
 	}
+
 }
 
 static void
