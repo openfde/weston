@@ -1146,6 +1146,7 @@ background_create(struct desktop *desktop, struct output *output)
 	s = weston_config_get_section(desktop->config, "shell", NULL, NULL);
 	weston_config_section_get_string(s, "background-image",
 					 &background->image, NULL);
+	background->image="/usr/share/weston/background.png";
 	weston_config_section_get_color(s, "background-color",
 					&background->color, 0x00000000);
 
@@ -1298,13 +1299,12 @@ output_init(struct output *output, struct desktop *desktop)
 {
 	struct wl_surface *surface;
 
-/*	if (desktop->want_panel) {
+	if (desktop->want_panel) {
 		output->panel = panel_create(desktop, output);
 		surface = window_get_wl_surface(output->panel->window);
 		weston_desktop_shell_set_panel(desktop->shell,
 					       output->output, surface);
 	}
-	*/
 
 	output->background = background_create(desktop, output);
 	surface = window_get_wl_surface(output->background->window);
@@ -1470,6 +1470,8 @@ parse_panel_position(struct desktop *desktop, struct weston_config_section *s)
 {
 	char *position;
 
+	desktop->want_panel = 0;
+	return ; 
 	desktop->want_panel = 1;
 
 	weston_config_section_get_string(s, "panel-position", &position, "top");
@@ -1520,7 +1522,7 @@ int main(int argc, char *argv[])
 	config_file = weston_config_get_name_from_env();
 	desktop.config = weston_config_parse(config_file);
 	s = weston_config_get_section(desktop.config, "shell", NULL, NULL);
-	weston_config_section_get_bool(s, "locking", &desktop.locking, true);
+	weston_config_section_get_bool(s, "locking", &desktop.locking, false);
 	parse_panel_position(&desktop, s);
 	parse_clock_format(&desktop, s);
 
