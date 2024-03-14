@@ -42,7 +42,7 @@ dep_libexec_weston = declare_dependency(
 	dependencies: dep_libweston_public
 )
 exe_weston = executable(
-	'weston',
+	'fde-weston',
 	'executable.c',
 	include_directories: common_inc,
 	dependencies: dep_libexec_weston,
