@@ -1459,7 +1459,7 @@ panel_add_launchers(struct panel *panel, struct desktop *desktop)
 		/*add default launcher*/ 
 		panel_add_launcher(panel,
 				   name,
-				   BINDIR "/fde_ctrl");
+				   BINDIR "/weston-terminal");
 		free(name);
 	}
 
