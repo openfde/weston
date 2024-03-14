@@ -3315,7 +3315,7 @@ wet_main(int argc, char *argv[])
 
 	if (!shell)
 		weston_config_section_get_string(section, "shell", &shell,
-						 "desktop-shell.so");
+						 "fde-desktop-shell.so");
 
 	if (wet_load_shell(wet.compositor, shell, &argc, argv) < 0)
 		goto out;

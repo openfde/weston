@@ -18,7 +18,7 @@ if get_option('shell-desktop')
 		dep_libweston_public,
 	]
 	plugin_shell_desktop = shared_library(
-		'desktop-shell',
+		'fde-desktop-shell',
 		srcs_shell_desktop,
 		include_directories: common_inc,
 		dependencies: deps_shell_desktop,
@@ -26,5 +26,5 @@ if get_option('shell-desktop')
 		install: true,
 		install_dir: dir_module_weston
 	)
-	env_modmap += 'desktop-shell.so=@0@;'.format(plugin_shell_desktop.full_path())
+	env_modmap += 'fde-desktop-shell.so=@0@;'.format(plugin_shell_desktop.full_path())
 endif
