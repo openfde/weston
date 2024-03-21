@@ -4022,17 +4022,12 @@ init_pointer_constraint(struct wl_resource *pointer_constraints_resource,
 				       pointer_constraint_constrain_resource_destroyed);
 
 	if (constraint) {
-		bool is_fullscreen = false;
-		if (weston_surface_is_desktop_surface(surface)) {
-			struct weston_desktop_surface * desktop_surface;
-			desktop_surface = weston_surface_get_desktop_surface(surface);
-			is_fullscreen = weston_desktop_surface_get_fullscreen(desktop_surface);
-		}
+		bool is_fullscreen = true;
 		if (is_fullscreen && !is_pointer_constraint_enabled(constraint)) {
 			weston_view_update_transform(pointer->focus);
-			weston_pointer_set_focus(pointer,pointer->focus);
+			weston_pointer_set_focus(pointer,pointer->focus,0,0);
 			enable_pointer_constraint(constraint,pointer->focus);
-			maybe_wrap_confined_pointer(constraint);
+			maybe_warp_confined_pointer(constraint);
 		}else{
 			maybe_enable_pointer_constraint(constraint);
 		}
