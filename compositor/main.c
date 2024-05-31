@@ -4151,7 +4151,7 @@ wet_main(int argc, char *argv[], const struct weston_testsuite_data *test_data)
 
 	if (!shell)
 		weston_config_section_get_string(section, "shell", &shell,
-						 "desktop");
+						 "fde-desktop");
 
 	if (wet_load_shell(wet.compositor, shell, &argc, argv) < 0)
 		goto out;
