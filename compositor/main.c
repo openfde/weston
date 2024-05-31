@@ -923,7 +923,7 @@ weston_create_listening_socket(struct wl_display *display, const char *socket_na
 		setenv("WAYLAND_DISPLAY", socket_name, 1);
 		return 0;
 	} else {
-		for (int i = 1; i <= 32; i++) {
+		for (int i = 0; i <= 32; i++) {
 			sprintf(name_candidate, "wayland-%d", i);
 			if (wl_display_add_socket(display, name_candidate) >= 0) {
 				setenv("WAYLAND_DISPLAY", name_candidate, 1);
