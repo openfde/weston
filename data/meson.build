@@ -1,6 +1,7 @@
 install_data(
 	[
 		'background.png',
+		'openfde.png',
 		'border.png',
 		'fullscreen.png',
 		'home.png',
