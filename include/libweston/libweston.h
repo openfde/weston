@@ -272,7 +272,6 @@ struct weston_output {
 	struct wl_event_source *idle_repaint_source;
 
 	struct weston_output_zoom zoom;
-	int dirty;
 	struct wl_signal frame_signal;
 	struct wl_signal destroy_signal;	/**< sent when disabled */
 	int move_x, move_y;
