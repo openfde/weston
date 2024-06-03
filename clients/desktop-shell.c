@@ -1146,7 +1146,7 @@ background_create(struct desktop *desktop, struct output *output)
 	s = weston_config_get_section(desktop->config, "shell", NULL, NULL);
 	weston_config_section_get_string(s, "background-image",
 					 &background->image, NULL);
-	background->image="/usr/share/weston/background.png";
+	background->image="/usr/local/share/weston/openfde.png";
 	weston_config_section_get_color(s, "background-color",
 					&background->color, 0x00000000);
 
