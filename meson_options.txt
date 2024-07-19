@@ -134,7 +134,7 @@ option(
 option(
 	'desktop-shell-client-default',
 	type: 'string',
-	value: 'weston-desktop-shell',
+	value: 'fde-weston-desktop-shell',
 	description: 'Weston desktop shell: default helper client selection'
 )
 

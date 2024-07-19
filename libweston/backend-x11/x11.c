@@ -77,6 +77,11 @@ static const uint32_t x11_formats[] = {
 	DRM_FORMAT_XRGB8888,
 };
 
+static double relx = 0;
+static double rely = 0;
+static double prev_relx = 0;
+static double prev_rely = 0;
+
 struct x11_backend {
 	struct weston_backend	 base;
 	struct weston_compositor *compositor;
@@ -1392,11 +1397,40 @@ x11_backend_deliver_motion_event(struct x11_backend *b,
 					   motion_notify->event_y,
 					   &x, &y);
 
+    if(x - b->prev_x != 0){
+        relx = x - b->prev_x;
+    }else if(x > 0 && output->base.width - x > 1){
+        relx = 0;
+    }else{
+        if(abs(prev_relx) > 3){
+            relx = prev_relx;
+        }else{
+            relx = prev_relx > 0 ? 3 : -3;
+        }
+    }
+    if(y - b->prev_y != 0){
+        rely = y - b->prev_y;
+    }else if(y > 0 && output->base.height - y > 1){
+        rely = 0;
+    }else{
+        if(abs(prev_rely) > 3){
+            rely = prev_rely;
+        }else{
+            rely = prev_rely > 0 ? 3 : -3;
+        }
+    }
 	motion_event = (struct weston_pointer_motion_event) {
 		.mask = WESTON_POINTER_MOTION_REL,
-		.dx = x - b->prev_x,
-		.dy = y - b->prev_y
+		.dx = relx,
+		.dy = rely
 	};
+
+    if(relx != 0){
+        prev_relx = relx;
+    }
+    if(rely != 0){
+        prev_rely = rely;
+    }
 
 	weston_compositor_get_time(&time);
 	notify_motion(&b->core_seat, &time, &motion_event);

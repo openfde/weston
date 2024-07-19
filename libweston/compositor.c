@@ -2937,9 +2937,6 @@ weston_output_repaint(struct weston_output *output, void *repaint_data)
 	pixman_region32_subtract(&output_damage,
 				 &output_damage, &ec->primary_plane.clip);
 
-	if (output->dirty)
-		weston_output_update_matrix(output);
-
 	r = output->repaint(output, &output_damage, repaint_data);
 
 	pixman_region32_fini(&output_damage);
@@ -6050,7 +6047,6 @@ weston_compositor_reflow_outputs(struct weston_compositor *compositor,
 
 		if (start_resizing) {
 			weston_output_move(output, output->x + delta_width, output->y);
-			output->dirty = 1;
 		}
 	}
 }
@@ -6140,7 +6136,6 @@ weston_output_update_matrix(struct weston_output *output)
 				    output->current_scale,
 				    output->current_scale, 1);
 
-	output->dirty = 0;
 
 	weston_matrix_invert(&output->inverse_matrix, &output->matrix);
 }
@@ -6188,7 +6183,7 @@ weston_output_move(struct weston_output *output, int x, int y)
 
 	weston_output_init_geometry(output, x, y);
 
-	output->dirty = 1;
+	weston_output_update_matrix(output);
 
 	/* Move views on this output. */
 	wl_signal_emit(&output->compositor->output_moved_signal, output);
@@ -6484,7 +6479,7 @@ weston_output_set_transform(struct weston_output *output,
 
 	weston_output_init_geometry(output, output->x, output->y);
 
-	output->dirty = 1;
+	weston_output_update_matrix(output);
 
 	/* Notify clients of the change for output transform. */
 	wl_list_for_each(head, &output->head_list, output_link) {
@@ -6752,7 +6747,6 @@ weston_output_enable(struct weston_output *output)
 
 	output->x = x;
 	output->y = y;
-	output->dirty = 1;
 	output->original_scale = output->scale;
 
 	wl_signal_init(&output->frame_signal);
@@ -6762,6 +6756,7 @@ weston_output_enable(struct weston_output *output)
 	weston_output_init_zoom(output);
 
 	weston_output_init_geometry(output, x, y);
+	weston_output_update_matrix(output);
 	weston_output_damage(output);
 
 	wl_list_init(&output->animation_list);

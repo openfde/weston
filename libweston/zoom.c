@@ -63,7 +63,6 @@ weston_zoom_frame_z(struct weston_animation *animation,
 		wl_list_init(&animation->link);
 	}
 
-	output->dirty = 1;
 	weston_output_damage(output);
 }
 
@@ -117,7 +116,6 @@ weston_zoom_transition(struct weston_output *output)
 		}
 	}
 
-	output->dirty = 1;
 	weston_output_damage(output);
 }
 

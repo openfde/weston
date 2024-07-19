@@ -4012,8 +4012,17 @@ init_pointer_constraint(struct wl_resource *pointer_constraints_resource,
 	wl_resource_set_implementation(cr, implementation, constraint,
 				       pointer_constraint_constrain_resource_destroyed);
 
-	if (constraint)
-		maybe_enable_pointer_constraint(constraint);
+	if (constraint) {
+		bool is_fullscreen = true;
+		if (is_fullscreen && !is_pointer_constraint_enabled(constraint)) {
+			weston_view_update_transform(pointer->focus);
+			weston_pointer_set_focus(pointer,pointer->focus,0,0);
+			enable_pointer_constraint(constraint,pointer->focus);
+			maybe_warp_confined_pointer(constraint);
+		}else{
+			maybe_enable_pointer_constraint(constraint);
+		}
+	}
 }
 
 static void
