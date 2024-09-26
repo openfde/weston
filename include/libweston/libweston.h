@@ -322,6 +322,9 @@ struct weston_output {
 
 	int (*enable)(struct weston_output *output);
 	int (*disable)(struct weston_output *output);
+	int (*set_custom_cursor)(struct weston_output *base, uint8_t *data, int width, int height, int stride, int hot_x, int hot_y);
+	int (*is_x11_cursor_enabled)(struct weston_output *base);
+	int (*disable_x11_cursor)(struct weston_output *base);
 
 	/** Attach a head in the backend
 	 *

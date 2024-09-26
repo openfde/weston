@@ -732,6 +732,7 @@ usage(int error_code)
 		"  --fullscreen\t\tRun in fullscreen mode\n"
 		"  --use-pixman\t\tUse the pixman (CPU) renderer\n"
 		"  --output-count=COUNT\tCreate multiple outputs\n"
+		"  --show-x11-cursor\tShow x11 cursor and hide weston cursor\n"
 		"  --no-input\t\tDont create input devices\n\n");
 #endif
 
@@ -2786,6 +2787,7 @@ load_x11_backend(struct weston_compositor *c,
 	       { WESTON_OPTION_BOOLEAN, "fullscreen", 'f', &config.fullscreen },
 	       { WESTON_OPTION_INTEGER, "output-count", 0, &option_count },
 	       { WESTON_OPTION_BOOLEAN, "no-input", 0, &config.no_input },
+	       { WESTON_OPTION_BOOLEAN, "show-x11-cursor", 0, &config.x11_cursor_enabled },
 	       { WESTON_OPTION_BOOLEAN, "use-pixman", 0, &config.use_pixman },
 	};
 

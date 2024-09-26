@@ -48,6 +48,7 @@
 #include "relative-pointer-unstable-v1-server-protocol.h"
 #include "pointer-constraints-unstable-v1-server-protocol.h"
 #include "input-timestamps-unstable-v1-server-protocol.h"
+#include "linux-dmabuf.h"
 
 enum pointer_constraint_type {
 	POINTER_CONSTRAINT_TYPE_LOCK,
@@ -2705,6 +2706,13 @@ pointer_set_cursor(struct wl_client *client, struct wl_resource *resource,
 	if (surface_resource)
 		surface = wl_resource_get_user_data(surface_resource);
 
+    if (!surface) {
+        if (pointer->focus && pointer->focus->surface && pointer->focus->surface->output &&
+            pointer->focus->surface->output->is_x11_cursor_enabled(pointer->focus->surface->output)){
+            pointer->focus->surface->output->set_custom_cursor(pointer->focus->surface->output, NULL, 1, 1, 1, 0, 0);
+        }
+    }
+
 	if (pointer->focus == NULL)
 		return;
 	/* pointer->focus->surface->resource can be NULL. Surfaces like the
@@ -2724,7 +2732,8 @@ pointer_set_cursor(struct wl_client *client, struct wl_resource *resource,
 	}
 
 	if (pointer->sprite && pointer->sprite->surface == surface &&
-	    pointer->hotspot_x == x && pointer->hotspot_y == y)
+	    pointer->hotspot_x == x && pointer->hotspot_y == y &&
+	    surface->output && !surface->output->is_x11_cursor_enabled(surface->output))
 		return;
 
 	if (!pointer->sprite || pointer->sprite->surface != surface) {
@@ -2753,6 +2762,50 @@ pointer_set_cursor(struct wl_client *client, struct wl_resource *resource,
 		pointer_cursor_surface_committed(surface, 0, 0);
 		weston_view_schedule_repaint(pointer->sprite);
 	}
+
+    if(surface->output && surface->output->is_x11_cursor_enabled(surface->output)){
+        if(surface->buffer_ref.buffer){
+            struct wl_shm_buffer *shm_buffer = wl_shm_buffer_get(surface->buffer_ref.buffer->resource);
+            if (shm_buffer) {
+                int width = wl_shm_buffer_get_width(shm_buffer);
+                int height = wl_shm_buffer_get_height(shm_buffer);
+                int stride = wl_shm_buffer_get_stride(shm_buffer);
+                uint8_t *data = wl_shm_buffer_get_data(shm_buffer);
+                if(data){
+                    surface->output->set_custom_cursor(surface->output, data, width, height, stride, pointer->hotspot_x, pointer->hotspot_y);
+                    if (pointer->sprite){
+                        pointer_unmap_sprite(pointer);
+                    }
+                }
+            }else{
+                struct linux_dmabuf_buffer *dmabuf;
+                dmabuf = linux_dmabuf_buffer_get(surface->buffer_ref.buffer->resource);
+                if (dmabuf) {
+                    int width = dmabuf->attributes.width;
+                    int height = dmabuf->attributes.height;
+                    int stride = width * 4;
+                    int size = width * height * 4;
+
+                    int result = 0;
+                    uint8_t *target = (uint8_t *)malloc(size);
+                    if(target)
+                        result = weston_surface_copy_content(surface, target, size, 0, 0, width, height);
+                    if(result == 0){
+                        surface->output->set_custom_cursor(surface->output, target, width, height, stride, pointer->hotspot_x, pointer->hotspot_y);
+                        if (pointer->sprite){
+                            pointer_unmap_sprite(pointer);
+                        }
+                    }else{
+                        weston_log("weston surface copy content failed. \n");
+                        surface->output->set_custom_cursor(surface->output, NULL, 1, 1, 1, 0, 0);
+                        surface->output->disable_x11_cursor(surface->output);
+                    }
+                    if(target)
+                        free(target);
+                }
+            }
+        }
+    }
 }
 
 static void
