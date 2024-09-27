@@ -2708,8 +2708,11 @@ pointer_set_cursor(struct wl_client *client, struct wl_resource *resource,
 
     if (!surface) {
         if (pointer->focus && pointer->focus->surface && pointer->focus->surface->output &&
-            pointer->focus->surface->output->is_x11_cursor_enabled(pointer->focus->surface->output)){
-            pointer->focus->surface->output->set_custom_cursor(pointer->focus->surface->output, NULL, 1, 1, 1, 0, 0);
+            pointer->focus->surface->output->is_backend_cursor_enabled &&
+            pointer->focus->surface->output->is_backend_cursor_enabled(pointer->focus->surface->output) &&
+            pointer->focus->surface->output->set_custom_cursor){
+                //hide backend cursor
+                pointer->focus->surface->output->set_custom_cursor(pointer->focus->surface->output, NULL, 1, 1, 1, 0, 0);
         }
     }
 
@@ -2732,9 +2735,12 @@ pointer_set_cursor(struct wl_client *client, struct wl_resource *resource,
 	}
 
 	if (pointer->sprite && pointer->sprite->surface == surface &&
-	    pointer->hotspot_x == x && pointer->hotspot_y == y &&
-	    surface->output && !surface->output->is_x11_cursor_enabled(surface->output))
-		return;
+	    pointer->hotspot_x == x && pointer->hotspot_y == y){
+	    if(surface->output && surface->output->is_backend_cursor_enabled == NULL)
+	        return;
+	    if(surface->output && !surface->output->is_backend_cursor_enabled(surface->output))
+	        return;
+	}
 
 	if (!pointer->sprite || pointer->sprite->surface != surface) {
 		if (weston_surface_set_role(surface, "wl_pointer-cursor",
@@ -2763,7 +2769,7 @@ pointer_set_cursor(struct wl_client *client, struct wl_resource *resource,
 		weston_view_schedule_repaint(pointer->sprite);
 	}
 
-    if(surface->output && surface->output->is_x11_cursor_enabled(surface->output)){
+    if(surface->output && surface->output->is_backend_cursor_enabled && surface->output->is_backend_cursor_enabled(surface->output)){
         if(surface->buffer_ref.buffer){
             struct wl_shm_buffer *shm_buffer = wl_shm_buffer_get(surface->buffer_ref.buffer->resource);
             if (shm_buffer) {
@@ -2771,9 +2777,11 @@ pointer_set_cursor(struct wl_client *client, struct wl_resource *resource,
                 int height = wl_shm_buffer_get_height(shm_buffer);
                 int stride = wl_shm_buffer_get_stride(shm_buffer);
                 uint8_t *data = wl_shm_buffer_get_data(shm_buffer);
-                if(data){
+                if(data && surface->output->set_custom_cursor){
+                    //show backend cursor
                     surface->output->set_custom_cursor(surface->output, data, width, height, stride, pointer->hotspot_x, pointer->hotspot_y);
                     if (pointer->sprite){
+                        //hide weston cursor
                         pointer_unmap_sprite(pointer);
                     }
                 }
@@ -2790,15 +2798,20 @@ pointer_set_cursor(struct wl_client *client, struct wl_resource *resource,
                     uint8_t *target = (uint8_t *)malloc(size);
                     if(target)
                         result = weston_surface_copy_content(surface, target, size, 0, 0, width, height);
-                    if(result == 0){
+                    if(result == 0 && surface->output->set_custom_cursor){
+                        //show backend cursor
                         surface->output->set_custom_cursor(surface->output, target, width, height, stride, pointer->hotspot_x, pointer->hotspot_y);
                         if (pointer->sprite){
+                            //hide weston cursor
                             pointer_unmap_sprite(pointer);
                         }
                     }else{
                         weston_log("weston surface copy content failed. \n");
-                        surface->output->set_custom_cursor(surface->output, NULL, 1, 1, 1, 0, 0);
-                        surface->output->disable_x11_cursor(surface->output);
+                        //hide backend cursor
+                        if(surface->output->set_custom_cursor)
+                            surface->output->set_custom_cursor(surface->output, NULL, 1, 1, 1, 0, 0);
+                        if(surface->output->disable_backend_cursor)
+                            surface->output->disable_backend_cursor(surface->output);
                     }
                     if(target)
                         free(target);

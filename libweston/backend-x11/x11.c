@@ -98,7 +98,7 @@ struct x11_backend {
 	uint8_t			 xkb_event_base;
 	int			 fullscreen;
 	int			 no_input;
-	int			 x11_cursor_enabled;
+	int			 enable_backend_cursor;
 	int			 use_pixman;
 
 	int			 has_net_wm_state_fullscreen;
@@ -980,7 +980,7 @@ Cursor create_empty_cursor(Display *display, Window root) {
 static int is_x11_cursor_enabled(struct weston_output *base){
     struct x11_backend *b = to_x11_backend(base->compositor);
     if(b){
-        return b->x11_cursor_enabled;
+        return b->enable_backend_cursor;
     }
     return 0;
 }
@@ -988,7 +988,7 @@ static int is_x11_cursor_enabled(struct weston_output *base){
 static int disable_x11_cursor(struct weston_output *base){
     struct x11_backend *b = to_x11_backend(base->compositor);
     if(b){
-        b->x11_cursor_enabled = 0;
+        b->enable_backend_cursor = 0;
         return 0;
     }
     return -1;
@@ -1157,8 +1157,8 @@ x11_output_enable(struct weston_output *base)
 	output->base.set_dpms = NULL;
 	output->base.switch_mode = x11_output_switch_mode;
 	output->base.set_custom_cursor = x11_set_custom_cursor;
-	output->base.is_x11_cursor_enabled = is_x11_cursor_enabled;
-	output->base.disable_x11_cursor = disable_x11_cursor;
+	output->base.is_backend_cursor_enabled = is_x11_cursor_enabled;
+	output->base.disable_backend_cursor = disable_x11_cursor;
 
 	loop = wl_display_get_event_loop(b->compositor->wl_display);
 	output->finish_frame_timer =
@@ -1970,7 +1970,7 @@ x11_backend_create(struct weston_compositor *compositor,
 	b->compositor = compositor;
 	b->fullscreen = config->fullscreen;
 	b->no_input = config->no_input;
-	b->x11_cursor_enabled = config->x11_cursor_enabled;
+	b->enable_backend_cursor = config->enable_backend_cursor;
 
 	compositor->backend = &b->base;
 
