@@ -924,7 +924,7 @@ x11_output_destroy(struct weston_output *base)
 	free(output);
 }
 
-Cursor create_cursor(Display *display, Window root, uint8_t *data, int width, int height, int stride, int hot_x, int hot_y) {
+Cursor create_cursor(Display *display, uint8_t *data, int width, int height, int stride, int hot_x, int hot_y) {
     // Create an XImage for the cursor
     XcursorImage *cursor_image = XcursorImageCreate(width, height);
     if (!cursor_image) {
@@ -998,21 +998,20 @@ static int x11_set_custom_cursor(struct weston_output *base, uint8_t *data, int 
     struct x11_output *output = to_x11_output(base);
     struct x11_backend *b = to_x11_backend(base->compositor);
 
-    if(b && output){
-        if(data){
-            Cursor cursor = create_cursor(b->dpy, b->screen->root, data, width, height, stride, hot_x, hot_y);
-            if(cursor == None){
-                return -1;
-            }
-            XDefineCursor(b->dpy, output->window, cursor);
-            return 0;
-        }else{
-            Cursor empty_cursor = create_empty_cursor(b->dpy, b->screen->root);
-            XDefineCursor(b->dpy, output->window, empty_cursor);
-            return 0;
+    if(!b || !output)
+        return -1;
+
+    if(data){
+        Cursor cursor = create_cursor(b->dpy, data, width, height, stride, hot_x, hot_y);
+        if(cursor == None){
+            return -1;
         }
+        XDefineCursor(b->dpy, output->window, cursor);
+    }else{
+        Cursor empty_cursor = create_empty_cursor(b->dpy, b->screen->root);
+        XDefineCursor(b->dpy, output->window, empty_cursor);
     }
-    return -1;
+    return 0;
 }
 
 static int
