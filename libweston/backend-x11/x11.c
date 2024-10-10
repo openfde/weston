@@ -64,6 +64,7 @@
 #include "linux-dmabuf.h"
 #include "linux-explicit-synchronization.h"
 #include <libweston/windowed-output-api.h>
+#include <X11/Xcursor/Xcursor.h>
 
 #define DEFAULT_AXIS_STEP_DISTANCE 10
 
@@ -97,6 +98,7 @@ struct x11_backend {
 	uint8_t			 xkb_event_base;
 	int			 fullscreen;
 	int			 no_input;
+	int			 enable_backend_cursor;
 	int			 use_pixman;
 
 	int			 has_net_wm_state_fullscreen;
@@ -922,6 +924,96 @@ x11_output_destroy(struct weston_output *base)
 	free(output);
 }
 
+Cursor create_cursor(Display *display, uint8_t *data, int width, int height, int stride, int hot_x, int hot_y) {
+    // Create an XImage for the cursor
+    XcursorImage *cursor_image = XcursorImageCreate(width, height);
+    if (!cursor_image) {
+        fprintf(stderr, "Failed to create XcursorImage\n");
+        return None;
+    }
+
+    // Set the cursor's hotspot to the center
+    cursor_image->xhot = hot_x;
+    cursor_image->yhot = hot_y;
+
+    for (int y = 0; y < height; y++) {
+        uint8_t *source_row = data + y * stride;
+        uint32_t *target_row = cursor_image->pixels + y * width;
+        memcpy(target_row, source_row, width * sizeof(uint32_t));
+    }
+
+    // Create a cursor from the image
+    Cursor cursor = XcursorImageLoadCursor(display, cursor_image);
+    XcursorImageDestroy(cursor_image);
+    return cursor;
+}
+
+Cursor create_empty_cursor(Display *display, Window root) {
+    // Create a 1x1 empty pixmap (transparent)
+    Pixmap empty_pixmap = XCreatePixmap(display, root, 1, 1, 1);
+
+    // Create an empty mask (for transparency)
+    Pixmap mask_pixmap = XCreatePixmap(display, root, 1, 1, 1);
+
+    // Create a graphics context
+    XGCValues xgc;
+    GC gc = XCreateGC(display, empty_pixmap, 0, &xgc);
+
+    // Clear both pixmaps (fill them with "0", meaning transparency)
+    XSetForeground(display, gc, 0);
+    XFillRectangle(display, empty_pixmap, gc, 0, 0, 1, 1);
+    XFillRectangle(display, mask_pixmap, gc, 0, 0, 1, 1);
+
+    // Create an empty cursor with the transparent pixmap and mask
+    XColor black;
+    black.red = black.green = black.blue = 0;
+    Cursor cursor = XCreatePixmapCursor(display, empty_pixmap, mask_pixmap, &black, &black, 0, 0);
+
+    // Free resources
+    XFreeGC(display, gc);
+    XFreePixmap(display, empty_pixmap);
+    XFreePixmap(display, mask_pixmap);
+
+    return cursor;
+}
+
+static int is_x11_cursor_enabled(struct weston_output *base){
+    struct x11_backend *b = to_x11_backend(base->compositor);
+    if(b){
+        return b->enable_backend_cursor;
+    }
+    return 0;
+}
+
+static int disable_x11_cursor(struct weston_output *base){
+    struct x11_backend *b = to_x11_backend(base->compositor);
+    if(b){
+        b->enable_backend_cursor = 0;
+        return 0;
+    }
+    return -1;
+}
+
+static int x11_set_custom_cursor(struct weston_output *base, uint8_t *data, int width, int height, int stride, int hot_x, int hot_y) {
+    struct x11_output *output = to_x11_output(base);
+    struct x11_backend *b = to_x11_backend(base->compositor);
+
+    if(!b || !output)
+        return -1;
+
+    if(data){
+        Cursor cursor = create_cursor(b->dpy, data, width, height, stride, hot_x, hot_y);
+        if(cursor == None){
+            return -1;
+        }
+        XDefineCursor(b->dpy, output->window, cursor);
+    }else{
+        Cursor empty_cursor = create_empty_cursor(b->dpy, b->screen->root);
+        XDefineCursor(b->dpy, output->window, empty_cursor);
+    }
+    return 0;
+}
+
 static int
 x11_output_enable(struct weston_output *base)
 {
@@ -1063,6 +1155,9 @@ x11_output_enable(struct weston_output *base)
 	output->base.set_backlight = NULL;
 	output->base.set_dpms = NULL;
 	output->base.switch_mode = x11_output_switch_mode;
+	output->base.set_custom_cursor = x11_set_custom_cursor;
+	output->base.is_backend_cursor_enabled = is_x11_cursor_enabled;
+	output->base.disable_backend_cursor = disable_x11_cursor;
 
 	loop = wl_display_get_event_loop(b->compositor->wl_display);
 	output->finish_frame_timer =
@@ -1874,6 +1969,7 @@ x11_backend_create(struct weston_compositor *compositor,
 	b->compositor = compositor;
 	b->fullscreen = config->fullscreen;
 	b->no_input = config->no_input;
+	b->enable_backend_cursor = config->enable_backend_cursor;
 
 	compositor->backend = &b->base;
 

@@ -48,6 +48,7 @@
 #include "relative-pointer-unstable-v1-server-protocol.h"
 #include "pointer-constraints-unstable-v1-server-protocol.h"
 #include "input-timestamps-unstable-v1-server-protocol.h"
+#include "linux-dmabuf.h"
 
 enum pointer_constraint_type {
 	POINTER_CONSTRAINT_TYPE_LOCK,
@@ -2718,14 +2719,22 @@ pointer_set_cursor(struct wl_client *client, struct wl_resource *resource,
 		return;
 
 	if (!surface) {
+		if (pointer->focus && pointer->focus->surface && pointer->focus->surface->output &&
+		    pointer->focus->surface->output->is_backend_cursor_enabled &&
+		    pointer->focus->surface->output->is_backend_cursor_enabled(pointer->focus->surface->output) &&
+		    pointer->focus->surface->output->set_custom_cursor){
+		    //hide backend cursor
+		    pointer->focus->surface->output->set_custom_cursor(pointer->focus->surface->output, NULL, 1, 1, 1, 0, 0);
+		}
 		if (pointer->sprite)
 			pointer_unmap_sprite(pointer);
 		return;
 	}
 
 	if (pointer->sprite && pointer->sprite->surface == surface &&
-	    pointer->hotspot_x == x && pointer->hotspot_y == y)
-		return;
+	    pointer->hotspot_x == x && pointer->hotspot_y == y){
+	    return;
+	}
 
 	if (!pointer->sprite || pointer->sprite->surface != surface) {
 		if (weston_surface_set_role(surface, "wl_pointer-cursor",
@@ -2753,6 +2762,36 @@ pointer_set_cursor(struct wl_client *client, struct wl_resource *resource,
 		pointer_cursor_surface_committed(surface, 0, 0);
 		weston_view_schedule_repaint(pointer->sprite);
 	}
+
+    if(surface->output == NULL)
+        return;
+    if(surface->output->is_backend_cursor_enabled == NULL || surface->output->set_custom_cursor == NULL)
+        return;
+    if(surface->output->is_backend_cursor_enabled(surface->output)){
+        if(surface->buffer_ref.buffer){
+            int result = 0;
+            int size = surface->width * surface->height * 4;
+            int stride = surface->width * 4;
+            uint8_t *target = (uint8_t *)malloc(size);
+            if(target)
+                result = weston_surface_copy_content(surface, target, size, 0, 0, surface->width, surface->height);
+            if(result == 0){
+                //show backend cursor
+                surface->output->set_custom_cursor(surface->output, target, surface->width, surface->height, stride, pointer->hotspot_x, pointer->hotspot_y);
+                if (pointer->sprite){
+                    //hide weston cursor
+                    pointer_unmap_sprite(pointer);
+                }
+            }else{
+                weston_log("weston surface copy content failed. \n");
+                //hide backend cursor
+                surface->output->set_custom_cursor(surface->output, NULL, 1, 1, 1, 0, 0);
+                surface->output->disable_backend_cursor(surface->output);
+            }
+            if(target)
+                free(target);
+        }
+    }
 }
 
 static void

@@ -41,6 +41,7 @@ struct weston_x11_backend_config {
 
 	bool fullscreen;
 	bool no_input;
+	bool enable_backend_cursor;
 
 	/** Whether to use the pixman renderer instead of the OpenGL ES renderer. */
 	bool use_pixman;
