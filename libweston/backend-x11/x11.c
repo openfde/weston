@@ -48,6 +48,7 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xlib-xcb.h>
+#include "cursor-util.h"
 
 #include <xkbcommon/xkbcommon.h>
 
@@ -64,7 +65,6 @@
 #include "linux-dmabuf.h"
 #include "linux-explicit-synchronization.h"
 #include <libweston/windowed-output-api.h>
-#include <X11/Xcursor/Xcursor.h>
 
 #define DEFAULT_AXIS_STEP_DISTANCE 10
 
@@ -924,59 +924,6 @@ x11_output_destroy(struct weston_output *base)
 	free(output);
 }
 
-Cursor create_cursor(Display *display, uint8_t *data, int width, int height, int stride, int hot_x, int hot_y) {
-    // Create an XImage for the cursor
-    XcursorImage *cursor_image = XcursorImageCreate(width, height);
-    if (!cursor_image) {
-        fprintf(stderr, "Failed to create XcursorImage\n");
-        return None;
-    }
-
-    // Set the cursor's hotspot to the center
-    cursor_image->xhot = hot_x;
-    cursor_image->yhot = hot_y;
-
-    for (int y = 0; y < height; y++) {
-        uint8_t *source_row = data + y * stride;
-        uint32_t *target_row = cursor_image->pixels + y * width;
-        memcpy(target_row, source_row, width * sizeof(uint32_t));
-    }
-
-    // Create a cursor from the image
-    Cursor cursor = XcursorImageLoadCursor(display, cursor_image);
-    XcursorImageDestroy(cursor_image);
-    return cursor;
-}
-
-Cursor create_empty_cursor(Display *display, Window root) {
-    // Create a 1x1 empty pixmap (transparent)
-    Pixmap empty_pixmap = XCreatePixmap(display, root, 1, 1, 1);
-
-    // Create an empty mask (for transparency)
-    Pixmap mask_pixmap = XCreatePixmap(display, root, 1, 1, 1);
-
-    // Create a graphics context
-    XGCValues xgc;
-    GC gc = XCreateGC(display, empty_pixmap, 0, &xgc);
-
-    // Clear both pixmaps (fill them with "0", meaning transparency)
-    XSetForeground(display, gc, 0);
-    XFillRectangle(display, empty_pixmap, gc, 0, 0, 1, 1);
-    XFillRectangle(display, mask_pixmap, gc, 0, 0, 1, 1);
-
-    // Create an empty cursor with the transparent pixmap and mask
-    XColor black;
-    black.red = black.green = black.blue = 0;
-    Cursor cursor = XCreatePixmapCursor(display, empty_pixmap, mask_pixmap, &black, &black, 0, 0);
-
-    // Free resources
-    XFreeGC(display, gc);
-    XFreePixmap(display, empty_pixmap);
-    XFreePixmap(display, mask_pixmap);
-
-    return cursor;
-}
-
 static int is_x11_cursor_enabled(struct weston_output *base){
     struct x11_backend *b = to_x11_backend(base->compositor);
     if(b){
@@ -1008,8 +955,7 @@ static int x11_set_custom_cursor(struct weston_output *base, uint8_t *data, int 
         }
         XDefineCursor(b->dpy, output->window, cursor);
     }else{
-        Cursor empty_cursor = create_empty_cursor(b->dpy, b->screen->root);
-        XDefineCursor(b->dpy, output->window, empty_cursor);
+        xcb_change_window_attributes(b->conn, output->window, XCB_CW_CURSOR, (uint32_t[]){b->null_cursor});
     }
     return 0;
 }
@@ -1499,7 +1445,7 @@ x11_backend_deliver_motion_event(struct x11_backend *b,
     }else if(x > 0 && output->base.width - x > 1){
         relx = 0;
     }else{
-        if(abs(prev_relx) > 3){
+        if(fabs(prev_relx) > 3){
             relx = prev_relx;
         }else{
             relx = prev_relx > 0 ? 3 : -3;
@@ -1510,7 +1456,7 @@ x11_backend_deliver_motion_event(struct x11_backend *b,
     }else if(y > 0 && output->base.height - y > 1){
         rely = 0;
     }else{
-        if(abs(prev_rely) > 3){
+        if(fabs(prev_rely) > 3){
             rely = prev_rely;
         }else{
             rely = prev_rely > 0 ? 3 : -3;
