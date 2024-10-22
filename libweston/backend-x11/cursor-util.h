@@ -1,6 +1,6 @@
 /*
-*   In order to avoid introducing the libxcursor and libxrender libraries, 
-*   we will separately introduce some APIs and implementations of the Xrender. h 
+*   In order to avoid introducing the libxcursor and libxrender libraries,
+*   we will separately introduce some APIs and implementations of the Xrender.h
 *   and Xcursor. h header files.
 *
 */
@@ -15,6 +15,10 @@
 
 #define XCURSOR_IMAGE_MAX_SIZE	    0x7fff	/* 32767x32767 max cursor size */
 #define XCURSOR_IMAGE_VERSION	    1
+
+typedef int XcursorBool;
+#define XcursorTrue 1
+#define XcursorFalse 0
 
 #define RenderHasExtension(i) ((i) && ((i)->codes))
 #define RenderCheckExtension(dpy,i,val) \

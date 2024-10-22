@@ -864,11 +864,61 @@ XRenderFreePicture (Display                   *dpy,
     SyncHandle();
 }
 
+Bool XRenderQueryExtension (Display *dpy)
+{
+    XRenderExtDisplayInfo *info = XRenderFindDisplay (dpy);
+
+    if (RenderHasExtension(info)) {
+	return True;
+    } else {
+	return False;
+    }
+}
+
+Status XRenderQueryVersion (Display *dpy,
+			    int	    *major_versionp,
+			    int	    *minor_versionp)
+{
+    XRenderExtDisplayInfo *info = XRenderFindDisplay (dpy);
+    XRenderInfo	    *xri;
+
+    if (!RenderHasExtension (info))
+	return 0;
+
+    if (!XRenderQueryFormats (dpy))
+	return 0;
+
+    xri = info->info;
+    *major_versionp = xri->major_version;
+    *minor_versionp = xri->minor_version;
+    return 1;
+}
+
+
+XcursorBool
+XcursorSupportsARGB (Display *dpy)
+{
+    int major, minor;
+    XcursorBool has_render_cursor = XcursorFalse;
+    if (XRenderQueryExtension (dpy) &&
+	XRenderQueryVersion (dpy, &major, &minor))
+    {
+	if (major > 0 || minor >= 5)
+	{
+	    has_render_cursor = XcursorTrue;
+	}
+    }
+    return has_render_cursor;
+}
+
+
 Cursor
 XcursorImageLoadCursor (Display *dpy, const XcursorImage *image)
 {
     Cursor  cursor;
 
+    if(XcursorSupportsARGB (dpy))
+    {
 	XImage		    ximage;
 	int		    screen = DefaultScreen (dpy);
 	Pixmap		    pixmap;
@@ -906,9 +956,26 @@ XcursorImageLoadCursor (Display *dpy, const XcursorImage *image)
 	cursor = XRenderCreateCursor (dpy, picture,
 				      image->xhot, image->yhot);
 	XRenderFreePicture (dpy, picture);
-    
+    }
+
     return cursor;
 }
+
+uint32_t convertPixelA8B8G8R8ToA8R8G8B8(uint32_t pixel) {
+    uint8_t a = (pixel >> 24) & 0xFF;
+    uint8_t b = (pixel >> 16) & 0xFF;
+    uint8_t g = (pixel >> 8) & 0xFF;
+    uint8_t r = pixel & 0xFF;
+
+    return (uint32_t)a << 24 | (uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b;
+}
+
+void convertABGRToARGB(uint32_t *data, size_t num_pixels) {
+    for (size_t i = 0; i < num_pixels; i++) {
+        data[i] = convertPixelA8B8G8R8ToA8R8G8B8(data[i]);
+    }
+}
+
 
 Cursor create_cursor(Display *display, uint8_t *data, int width, int height, int stride, int hot_x, int hot_y) {
     // Create an XImage for the cursor
@@ -921,6 +988,8 @@ Cursor create_cursor(Display *display, uint8_t *data, int width, int height, int
     // Set the cursor's hotspot to the center
     cursor_image->xhot = hot_x;
     cursor_image->yhot = hot_y;
+
+    convertABGRToARGB((uint32_t *)data, width*height);
 
     for (int y = 0; y < height; y++) {
         uint8_t *source_row = data + y * stride;
