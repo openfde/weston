@@ -7,7 +7,6 @@ config_h.set('BUILD_X11_COMPOSITOR', '1')
 
 srcs_x11 = [
 	'x11.c',
-	'cursor-util.c',
 	presentation_time_server_protocol_h,
 ]
 
@@ -21,7 +20,8 @@ deps_x11 = [
 	dep_libdrm_headers,
 	dep_x11_xcb,
 	dep_lib_cairo_shared,
-	dep_pixman
+	dep_pixman,
+	dep_libxrender
 ]
 
 foreach name : [ 'xcb-shm', 'x11', 'x11-xcb' ]
