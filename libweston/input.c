@@ -2777,10 +2777,16 @@ pointer_set_cursor(struct wl_client *client, struct wl_resource *resource,
                 result = weston_surface_copy_content(surface, target, size, 0, 0, surface->width, surface->height);
             if(result == 0){
                 //show backend cursor
-                surface->output->set_custom_cursor(surface->output, target, surface->width, surface->height, stride, pointer->hotspot_x, pointer->hotspot_y);
-                if (pointer->sprite){
-                    //hide weston cursor
-                    pointer_unmap_sprite(pointer);
+                result = surface->output->set_custom_cursor(surface->output, target, surface->width, surface->height, stride, pointer->hotspot_x, pointer->hotspot_y);
+                if(result != 0){
+                    weston_log("weston set custom x11 cursor failed. \n");
+                    surface->output->set_custom_cursor(surface->output, NULL, 1, 1, 1, 0, 0);
+                    surface->output->disable_backend_cursor(surface->output);
+                }else{
+                    if (pointer->sprite){
+                        //hide weston cursor
+                        pointer_unmap_sprite(pointer);
+                    }
                 }
             }else{
                 weston_log("weston surface copy content failed. \n");
