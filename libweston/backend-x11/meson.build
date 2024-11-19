@@ -21,7 +21,7 @@ deps_x11 = [
 	dep_x11_xcb,
 	dep_lib_cairo_shared,
 	dep_pixman,
-	dep_libxcursor
+	dep_libxrender
 ]
 
 foreach name : [ 'xcb-shm', 'x11', 'x11-xcb' ]
