@@ -4022,7 +4022,7 @@ shell_fade(struct desktop_shell *shell, enum fade_type type)
 		tint = 0.0;
 		break;
 	case FADE_OUT:
-		tint = 1.0;
+		tint = 0.0;
 		break;
 	default:
 		weston_log("shell: invalid fade type\n");
