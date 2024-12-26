@@ -66,7 +66,7 @@
 #include "../remoting/remoting-plugin.h"
 #include "../pipewire/pipewire-plugin.h"
 
-#define WINDOW_TITLE "Weston Compositor"
+#define WINDOW_TITLE "FDE Weston Compositor"
 /* flight recorder size (in bytes) */
 #define DEFAULT_FLIGHT_REC_SIZE (5 * 1024 * 1024)
 
