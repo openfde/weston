@@ -65,7 +65,7 @@
 #include <libweston/pixel-formats.h>
 #include <libweston/windowed-output-api.h>
 
-#define WINDOW_TITLE "Weston Compositor"
+#define WINDOW_TITLE "FDE Weston Compositor"
 
 #define WINDOW_MIN_WIDTH 128
 #define WINDOW_MIN_HEIGHT 128

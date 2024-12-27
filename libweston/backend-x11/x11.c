@@ -944,7 +944,7 @@ x11_output_enable(struct weston_output *base)
 
 	b = output->backend;
 
-	static const char name[] = "Weston Compositor";
+	static const char name[] = "FDE Weston Compositor";
 	static const char class[] = "weston-1\0Weston Compositor";
 	char *title = NULL;
 	xcb_screen_t *screen;
