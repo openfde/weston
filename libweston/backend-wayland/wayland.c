@@ -62,7 +62,7 @@
 #include "linux-dmabuf.h"
 #include <libweston/windowed-output-api.h>
 
-#define WINDOW_TITLE "Weston Compositor"
+#define WINDOW_TITLE "FDE Weston Compositor"
 
 static const uint32_t wayland_formats[] = {
 	DRM_FORMAT_ARGB8888,
